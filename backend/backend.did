@@ -1,0 +1,17 @@
+type Result = 
+ variant {
+   err: text;
+   ok: nat;
+ };
+type Listing = 
+ record {
+   description: text;
+   id: nat;
+   image: text;
+   price: nat;
+   title: text;
+ };
+service : {
+  addListing: (text, nat, text, text) -> (Result);
+  getListings: () -> (vec Listing) query;
+}
