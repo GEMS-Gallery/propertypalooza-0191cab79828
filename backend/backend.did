@@ -1,17 +1,32 @@
-type Result = 
+type User = 
+ record {
+   avatar: text;
+   handle: text;
+   name: text;
+ };
+type Tweet = 
+ record {
+   id: nat;
+   likes: nat;
+   retweets: nat;
+   "text": text;
+   timestamp: Time;
+   user: User;
+ };
+type Time = int;
+type Result_1 = 
  variant {
    err: text;
    ok: nat;
  };
-type Listing = 
- record {
-   description: text;
-   id: nat;
-   image: text;
-   price: nat;
-   title: text;
+type Result = 
+ variant {
+   err: text;
+   ok;
  };
 service : {
-  addListing: (text, nat, text, text) -> (Result);
-  getListings: () -> (vec Listing) query;
+  createTweet: (text, text, text, text) -> (Result_1);
+  getTweets: () -> (vec Tweet) query;
+  likeTweet: (nat) -> (Result);
+  retweetTweet: (nat) -> (Result);
 }
