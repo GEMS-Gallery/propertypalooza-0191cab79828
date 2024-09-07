@@ -128,7 +128,6 @@
         <div id="tweet-container"></div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@dfinity/agent/lib/index.js"></script>
     <script>
         const tweetInput = document.getElementById('tweet-input');
         const tweetButton = document.getElementById('tweet-button');
@@ -145,57 +144,25 @@
 
         let tweets = [];
 
-        const canisterId = 'rrkah-fqaaa-aaaaa-aaaaq-cai'; // Replace with your actual canister ID
-        const agent = new window.ic.HttpAgent();
-        const actor = window.ic.Actor.createActor(canisterId, {
-            agent,
-            interfaceFactory: ({ IDL }) => {
-                return IDL.Service({
-                    getTweets: IDL.Func([], [IDL.Vec(IDL.Record({
-                        id: IDL.Nat,
-                        text: IDL.Text,
-                        user: IDL.Record({
-                            name: IDL.Text,
-                            handle: IDL.Text,
-                            avatar: IDL.Text
-                        }),
-                        likes: IDL.Nat,
-                        retweets: IDL.Nat,
-                        timestamp: IDL.Int
-                    }))], ['query']),
-                    createTweet: IDL.Func([IDL.Text, IDL.Text, IDL.Text, IDL.Text], [IDL.Variant({ 'ok': IDL.Nat, 'err': IDL.Text })], []),
-                    likeTweet: IDL.Func([IDL.Nat], [IDL.Variant({ 'ok': IDL.Null, 'err': IDL.Text })], []),
-                    retweetTweet: IDL.Func([IDL.Nat], [IDL.Variant({ 'ok': IDL.Null, 'err': IDL.Text })], [])
-                });
-            }
-        });
-
         function updateCurrentUser() {
             currentUserElement.textContent = currentUser.name;
             profileName.textContent = currentUser.name;
             profileHandle.textContent = currentUser.handle;
         }
 
-        async function createTweet(text) {
-            try {
-                const result = await actor.createTweet(text, currentUser.name, currentUser.handle, currentUser.avatar);
-                if ('ok' in result) {
-                    await fetchTweets();
-                } else {
-                    console.error('Error creating tweet:', result.err);
-                }
-            } catch (error) {
-                console.error('Error creating tweet:', error);
-            }
-        }
-
-        async function fetchTweets() {
-            try {
-                tweets = await actor.getTweets();
-                renderTweets();
-            } catch (error) {
-                console.error('Error fetching tweets:', error);
-            }
+        function createTweet(text) {
+            const tweet = {
+                id: Date.now(),
+                text: text,
+                user: currentUser,
+                likes: 0,
+                retweets: 0,
+                timestamp: new Date(),
+                liked: false,
+                retweeted: false
+            };
+            tweets.unshift(tweet);
+            renderTweets();
         }
 
         function renderTweets() {
@@ -211,39 +178,27 @@
                     </div>
                     <div class="tweet-text">${tweet.text}</div>
                     <div class="tweet-actions">
-                        <span class="tweet-action like" onclick="likeTweet(${tweet.id})">❤️ ${tweet.likes}</span>
-                        <span class="tweet-action retweet" onclick="retweetTweet(${tweet.id})">🔁 ${tweet.retweets}</span>
-                        <span class="tweet-action">${new Date(Number(tweet.timestamp) / 1000000).toLocaleString()}</span>
+                        <span class="tweet-action like ${tweet.liked ? 'liked' : ''}" onclick="toggleLike(${tweet.id})">❤️ ${tweet.likes}</span>
+                        <span class="tweet-action retweet ${tweet.retweeted ? 'retweeted' : ''}" onclick="toggleRetweet(${tweet.id})">🔁 ${tweet.retweets}</span>
+                        <span class="tweet-action">${tweet.timestamp.toLocaleString()}</span>
                     </div>
                 `;
                 tweetContainer.appendChild(tweetElement);
             });
         }
 
-        async function likeTweet(id) {
-            try {
-                const result = await actor.likeTweet(id);
-                if ('ok' in result) {
-                    await fetchTweets();
-                } else {
-                    console.error('Error liking tweet:', result.err);
-                }
-            } catch (error) {
-                console.error('Error liking tweet:', error);
-            }
+        function toggleLike(id) {
+            const tweet = tweets.find(t => t.id === id);
+            tweet.liked = !tweet.liked;
+            tweet.likes += tweet.liked ? 1 : -1;
+            renderTweets();
         }
 
-        async function retweetTweet(id) {
-            try {
-                const result = await actor.retweetTweet(id);
-                if ('ok' in result) {
-                    await fetchTweets();
-                } else {
-                    console.error('Error retweeting tweet:', result.err);
-                }
-            } catch (error) {
-                console.error('Error retweeting tweet:', error);
-            }
+        function toggleRetweet(id) {
+            const tweet = tweets.find(t => t.id === id);
+            tweet.retweeted = !tweet.retweeted;
+            tweet.retweets += tweet.retweeted ? 1 : -1;
+            renderTweets();
         }
 
         tweetButton.addEventListener('click', () => {
@@ -256,7 +211,11 @@
 
         // Initialize the app
         updateCurrentUser();
-        fetchTweets();
+
+        // Add some sample tweets
+        createTweet("Hello, Twitter clone!");
+        createTweet("This is a more feature-rich version of our Twitter clone.");
+        createTweet("You can now like and retweet posts!");
     </script>
 </body>
 </html>
